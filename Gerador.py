@@ -8,6 +8,7 @@ from reportlab.pdfbase import pdfmetrics            #importa funçãoo Centred
 from reportlab.lib.pagesizes import A4, landscape   #importa tamanho da página e permite que seja posta horizontalmente
 import pandas as pd
 from datetime import datetime
+import Mail
 
 class GeradorCertficados:
     arquivo = None
@@ -143,7 +144,6 @@ class GeradorCertficados:
                    'dedicando um total de ' + str(self.duracao) + ' ao projeto',
                    'Bauru, ' + self.DataTexto(datetime.now().strftime('%d/%m/%Y'))]
 
-
     def GeraCertificados(self):
         for nome in self.arquivo['Nome']:
             #gera nome do certificado, gera o arquivo do certificado e o título do arquivo
@@ -166,6 +166,21 @@ class GeradorCertficados:
             #fecha arquivo pdf e o salva
             c.showPage()
             c.save()
+
+            if(self.email_var.get() == 1):
+                email_c = self.arquivo[self.arquivo['Nome'] == nome]['email']
+                for i in email_c:
+                    email = i
+                try:
+                    print("Enviando certificado via email para " + str(email))
+                    Mail.send_email(email, filename, subject='Certificado ' + self.opcao + ' de ' + self.titulo, message="Segue anexo o certificado referente à(ao) " +self.opcao+ ' de ' + self.titulo + " ocorrida em " + self.datai)
+                except:
+                    print("Email não enviado")
+                else:
+                    print('Enviado com sucesso!')
+
+            print('Certificados gerados com sucesso!')
+
     
     def GerarCertificados(self):
         self.getDados()
