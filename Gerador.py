@@ -1,22 +1,20 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
-
+import os
+import re
+from reportlab.pdfgen import canvas                 #importa Canvas para criação de páginas
+from reportlab.pdfbase import pdfmetrics            #importa funçãoo Centred
+from reportlab.lib.pagesizes import A4, landscape   #importa tamanho da página e permite que seja posta horizontalmente
+import pandas as pd
+from datetime import datetime
 
 class GeradorCertficados:
     arquivo = None
+    imagem_fundo = None
 
     def __init__(self):
         self.Tela()
-
-    def AbrirArquivo(self):
-        self.arquivo_entry = filedialog.askopenfilenames(title = 'Arquivo de nomes', filetypes = (('txt', '*.txt'), ('csv', '*.csv')))
-        self.arquivoaberto_label.config(text = str(self.arquivo_entry))
-
-    def GerarCertificados(self):
-        self.getDados()
-        self.getOpcao()
-        return 0
 
     def getOpcao(self):
         self.opcao = self.opcao_var.get()
@@ -33,7 +31,7 @@ class GeradorCertficados:
             self.datai = self.datai_entry.get()
             self.dataf = self.dataf_entry.get()
             self.duracao = self.duracao_entry.get()
-            self.diretorio = self.duracao_entry.get()
+            self.diretorio = self.diretorio_entry.get()
         except:
             messagebox.showerror(title = 'Campos não preenchidos', message = 'Preencha todos os campos')
         else:
@@ -67,6 +65,118 @@ class GeradorCertficados:
         elif(data[1] == '12'):
             mes = 'Dezembro'
         return (data[0] + " de " + mes + " de " + data[2])
+
+    def ImagemDeFundo(self):
+        try:
+            self.imagem_fundo_entry = filedialog.askopenfilenames(title = 'Arquivo de nomes', filetypes = (('png', '*.png'), ('jpg', '*.jpg')))
+        except:
+            messagebox.showerror(title = 'Não foi possivel encontrar aquivo', message = 'Tente novamente')
+        else:
+            if (self.imagem_fundo_entry != ''):
+                self.imgaberto_label.config(text = str(self.imagem_fundo_entry))
+
+    def AbrirArquivo(self):
+        try:
+            self.arquivo_entry = filedialog.askopenfilenames(title = 'Arquivo de nomes', filetypes = (('csv', '*.csv'), ('all', '*.*')))
+        except:
+            messagebox.showerror(title = 'Não foi possivel encontrar aquivo', message = 'Tente novamente')
+        else:
+            if (self.arquivo_entry != ''):
+                self.arquivoaberto_label.config(text = str(self.arquivo_entry))
+
+    def CriaDiretorio(self):
+        try:
+            os.mkdir(self.diretorio)
+        except:
+            messagebox.showerror(title = 'Não foi possivel criar diretorio', message = 'Tente novamente')
+        else:
+            print('Diretorio ' + self.diretorio + ' criado com sucesso')
+
+    def AbreArquivo(self):
+        try:
+            self.arquivo = pd.read_csv(self.arquivo_entry[0])
+        except Exception as e:
+            print(e)
+            messagebox.showerror(title = 'Erro ao ler arquivo', message = 'Tente novamente')
+        else:
+            print('Arquivo aberto com sucesso!')
+
+    def AbreImagem(self):
+        self.imagem_fundo = self.imagem_fundo_entry[0]
+
+    def TextoOpcao(self, nome):
+        if(self.opcao == 'Curto Circuito'):
+            return ['Declaramos para os devidos fins que o/a discente '+ str(nome),
+                   'participou do curto circuito de ' + str(self.titulo), 
+                   ' no dia ' + self.DataTexto(self.datai),
+                   'realizado pelo Centro Acadêmico "Ada Lovelace" da UNESP Bauru,',
+                   'com duração de ' + str(self.duracao) +' hora(s).',
+                   'Bauru, ' + self.DataTexto(datetime.now().strftime('%d/%m/%Y'))]
+
+        if(self.opcao == 'Palestra'):
+            return ['Declaramos para os devidos fins que o/a discente '+ str(nome),
+                   'participou da palestra de título ', str(self.titulo) + ' no dia ' + self.DataTexto(self.datai),
+                   'no evento "' + self.evento + '", realizado pelo Centro Acadêmico', 
+                   '"Ada Lovelace" da UNESP Bauru, com duração de '+ str(self.duracao) +' hora.',
+                   'Bauru, ' + self.DataTexto(datetime.now().strftime('%d/%m/%Y'))]
+
+        if(self.opcao == 'Minicurso'):
+            return ['Declaramos para os devidos fins que o/a discente '+ str(nome),
+                   'participou do minicurso de ', str(self.titulo) + ' no dia ' + self.DataTexto(self.datai),
+                   'no evento "' + self.evento + '", realizado pelo Centro Acadêmico', 
+                   '"Ada Lovelace" da UNESP Bauru, com duração de '+ str(self.duracao) +' hora.',
+                   'Bauru, ' + self.DataTexto(datetime.now().strftime('%d/%m/%Y'))]
+
+        if(self.opcao == 'Visita Tecnica'):
+            return ['Declaramos para os devidos fins que o/a discente '+ str(nome),
+                   'participou da visita técnica para ', str(self.titulo) + ' no dia ' + self.DataTexto(self.datai),
+                   'no evento "' + self.evento + '", realizado pelo Centro Acadêmico', 
+                   '"Ada Lovelace" da UNESP Bauru, com duração de '+ str(self.duracao) +' hora.',
+                   'Bauru, ' + self.DataTexto(datetime.now().strftime('%d/%m/%Y'))]
+
+        if(self.opcao == 'Organização'):
+            return ['O Centro Acadêmico \'Ada Lovelace\' de Computação da UNESP Bauru', 
+                    'declara para os devidos fins que o/a discente' + str(nome),
+                   'participou da comissão organizadora do evento', str(self.evento), 
+                   'uma semana de palestras e minicursos, participando de reuniões semanais de 1h',
+                   'entre ' + self.DataTexto(self.datai) + ' e ' + DataTexto(self.dataf),
+                   'dedicando um total de ' + str(self.duracao) + ' ao projeto',
+                   'Bauru, ' + self.DataTexto(datetime.now().strftime('%d/%m/%Y'))]
+
+
+    def GeraCertificados(self):
+        for nome in self.arquivo['Nome']:
+            #gera nome do certificado, gera o arquivo do certificado e o título do arquivo
+            filename = os.path.join(self.diretorio, nome + ' - Certificado ' + self.titulo + '.pdf')
+            c = canvas.Canvas(filename, pagesize = landscape(A4))
+            c.setTitle(nome + " - Certificado" + self.titulo)
+            print('Gerando ' + filename)
+            #poe o background no fundo do certificado
+            cW, cH = c._pagesize
+            c.drawInlineImage(self.imagem_fundo, 0, 0, width = cW, height = cH)
+
+            texto = self.TextoOpcao(nome)
+
+            y = 380
+            for i in texto:
+                c.setFont('Helvetica', 20)
+                c.drawCentredString(400, y, i)
+                y -= 30
+
+            #fecha arquivo pdf e o salva
+            c.showPage()
+            c.save()
+    
+    def GerarCertificados(self):
+        self.getDados()
+        self.getOpcao()
+        self.CriaDiretorio()
+        self.AbreArquivo()
+        self.AbreImagem()
+        self.GeraCertificados()
+        return 0
+
+  
         
     def Tela(self):
         #inicia tela
@@ -85,7 +195,9 @@ class GeradorCertficados:
         duracao_label = Label(self.dados, text = 'Tempo de duração')
         diretorio_label = Label(self.dados, text = 'Nome do diretório')
         arquivo_label = Label(self.dados, text = 'Arquivo de nomes')
+        img_label = Label(self.dados, text = 'Imagem de fundo')
         self.arquivoaberto_label = Label(self.dados, text = 'Sem arquivo selecionado')
+        self.imgaberto_label = Label(self.dados, text = 'Sem imagem de fundo selecionada')
 
         evento_label = Label(evento, text = 'Título do Evento')
 
@@ -96,7 +208,9 @@ class GeradorCertficados:
         duracao_label.grid(row = 3, column = 0, sticky = E)
         diretorio_label.grid(row = 4, column = 0, sticky = E)
         arquivo_label.grid(row = 5, column = 0, sticky = E)
+        img_label.grid(row = 6, column = 0, sticky = E)
         self.arquivoaberto_label.grid(row = 5, column = 2)
+        self.imgaberto_label.grid(row = 6, column = 2)
 
         evento_label.grid(row = 4, column = 0, sticky = E)
 
@@ -120,10 +234,12 @@ class GeradorCertficados:
 
         #botoes
         arquivo_button = Button(self.dados, text = 'Abrir', command = self.AbrirArquivo)
+        img_button = Button(self.dados, text = 'Abrir', command = self.ImagemDeFundo)
         gerar_button = Button(self.root, text = 'Gerar!', command = self.GerarCertificados)
 
         #inserção de botoes
         arquivo_button.grid(row = 5, column = 1, sticky = E)
+        img_button.grid(row = 6, column = 1, sticky = E)
         gerar_button.grid(row = 2, column = 0, sticky = W+E)
 
         #radio buttons
